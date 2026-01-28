@@ -4,7 +4,7 @@ const express = require('express');
 const { Op } = require('sequelize');
 
 const {
-  models: { User, Expense },
+  models: { User, Expense, Category },
 } = require('./models/models');
 
 const createServer = () => {
@@ -75,6 +75,72 @@ const createServer = () => {
     }
 
     await user.destroy();
+
+    return res.sendStatus(204);
+  });
+
+  app.post('/categories', async (req, res) => {
+    const { title, name } = req.body || {};
+    const value = title ?? name;
+
+    if (!value) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    const category = await Category.create({ title: value });
+
+    return res.status(201).json(category.toJSON());
+  });
+
+  app.get('/categories', async (_req, res) => {
+    const categories = await Category.findAll({ order: [['id', 'ASC']] });
+
+    return res.json(categories.map((c) => c.toJSON()));
+  });
+
+  app.get('/categories/:id', async (req, res) => {
+    const id = Number(req.params.id);
+
+    const category = await Category.findByPk(id);
+
+    if (!category) {
+      return res.sendStatus(404);
+    }
+
+    return res.json(category.toJSON());
+  });
+
+  app.patch('/categories/:id', async (req, res) => {
+    const id = Number(req.params.id);
+
+    const category = await Category.findByPk(id);
+
+    if (!category) {
+      return res.sendStatus(404);
+    }
+
+    const { title, name } = req.body || {};
+    const value = title ?? name;
+
+    if (value !== undefined) {
+      category.title = value;
+    }
+
+    await category.save();
+
+    return res.json(category.toJSON());
+  });
+
+  app.delete('/categories/:id', async (req, res) => {
+    const id = Number(req.params.id);
+
+    const category = await Category.findByPk(id);
+
+    if (!category) {
+      return res.sendStatus(404);
+    }
+
+    await category.destroy();
 
     return res.sendStatus(204);
   });
